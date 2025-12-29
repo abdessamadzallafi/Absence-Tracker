@@ -1,10 +1,10 @@
 import '../domain/module.dart';
 import '../domain/module_repo.dart';
 import 'models/module_model.dart';
-import 'module_local_ds.dart';
+import 'module_remote_ds.dart';
 
 class ModuleRepoImpl implements ModuleRepo {
-  final ModuleLocalDS ds;
+  final ModuleRemoteDS ds;
   ModuleRepoImpl(this.ds);
 
   @override

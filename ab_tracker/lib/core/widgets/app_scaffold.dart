@@ -41,13 +41,6 @@ class _AppScaffoldState extends State<AppScaffold> {
       drawer: const AppDrawer(),
       appBar: AppBar(
         title: const Text('Absence Tracker'),
-        actions: [
-          IconButton(
-            tooltip: 'Menu',
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            icon: const Icon(Icons.menu),
-          ),
-        ],
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 240),

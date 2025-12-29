@@ -1,10 +1,10 @@
 import '../domain/student.dart';
 import '../domain/student_repo.dart';
 import 'models/student_model.dart';
-import 'student_local_ds.dart';
+import 'student_remote_ds.dart';
 
 class StudentRepoImpl implements StudentRepo {
-  final StudentLocalDS ds;
+  final StudentRemoteDS ds;
   StudentRepoImpl(this.ds);
 
   @override

@@ -1,10 +1,10 @@
 import '../domain/group.dart';
 import '../domain/group_repo.dart';
-import 'group_local_ds.dart';
+import 'group_remote_ds.dart';
 import 'models/group_model.dart';
 
 class GroupRepoImpl implements GroupRepo {
-  final GroupLocalDS ds;
+  final GroupRemoteDS ds;
   GroupRepoImpl(this.ds);
 
   @override

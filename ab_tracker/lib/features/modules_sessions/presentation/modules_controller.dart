@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/db/app_database.dart';
-import '../../groups/data/group_local_ds.dart';
+import '../../../core/api/api_provider.dart';
+import '../../groups/data/group_remote_ds.dart';
 import '../../groups/data/group_repo_impl.dart';
 import '../../groups/domain/group.dart';
 import '../../groups/domain/usecases/get_groups.dart';
-import '../data/module_local_ds.dart';
+import '../data/module_remote_ds.dart';
 import '../data/module_repo_impl.dart';
 import '../domain/module.dart';
 
@@ -29,16 +29,16 @@ class ModulesController extends AsyncNotifier<ModulesState> {
   String _query = '';
   int? _groupId;
 
-  late final AppDatabase _db;
+  late ModuleRepoImpl _moduleRepo;
 
   @override
   Future<ModulesState> build() async {
-    _db = AppDatabase.instance;
-    final groupsRepo = GroupRepoImpl(GroupLocalDS(_db));
+    final api = ref.watch(apiClientProvider);
+    final groupsRepo = GroupRepoImpl(GroupRemoteDS(api));
     final groups = await GetGroups(groupsRepo)();
 
-    final moduleRepo = ModuleRepoImpl(ModuleLocalDS(_db));
-    final modules = await moduleRepo.getAll(query: _query, groupId: _groupId);
+    _moduleRepo = ModuleRepoImpl(ModuleRemoteDS(api));
+    final modules = await _moduleRepo.getAll(query: _query, groupId: _groupId);
 
     return ModulesState(
         groups: groups,
@@ -58,14 +58,12 @@ class ModulesController extends AsyncNotifier<ModulesState> {
   }
 
   Future<void> upsert(ModuleEntity m) async {
-    final repo = ModuleRepoImpl(ModuleLocalDS(_db));
-    await repo.upsert(m);
+    await _moduleRepo.upsert(m);
     ref.invalidateSelf();
   }
 
   Future<void> delete(int id) async {
-    final repo = ModuleRepoImpl(ModuleLocalDS(_db));
-    await repo.delete(id);
+    await _moduleRepo.delete(id);
     ref.invalidateSelf();
   }
 }

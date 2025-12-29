@@ -55,13 +55,13 @@ class _StudentFormPageState extends ConsumerState<StudentFormPage> {
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
     );
 
-    await ref.read(studentsControllerProvider.notifier).upsert(s);
+    await ref.read(studentsProvider.notifier).upsert(s);
     if (mounted) Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(studentsControllerProvider);
+    final async = ref.watch(studentsProvider);
 
     return Scaffold(
       appBar: AppBar(

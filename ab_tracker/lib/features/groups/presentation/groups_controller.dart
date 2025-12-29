@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/api_provider.dart';
 import '../../../data/db/app_database.dart';
-import '../data/group_local_ds.dart';
+import '../data/group_remote_ds.dart';
 import '../data/group_repo_impl.dart';
 import '../domain/group.dart';
 import '../domain/usecases/delete_group.dart';
@@ -14,18 +15,19 @@ final groupsControllerProvider =
 class GroupsController extends AsyncNotifier<List<Group>> {
   String _query = '';
 
-  late final AppDatabase _db;
-  late final GetGroups _get;
-  late final UpsertGroup _upsert;
-  late final DeleteGroup _delete;
+  late GetGroups _get;
+  late UpsertGroup _upsert;
+  late DeleteGroup _delete;
+  late GroupRepoImpl _repo;
 
   @override
   Future<List<Group>> build() async {
-    _db = AppDatabase.instance;
-    final repo = GroupRepoImpl(GroupLocalDS(_db));
-    _get = GetGroups(repo);
-    _upsert = UpsertGroup(repo);
-    _delete = DeleteGroup(repo);
+    final api = ref.watch(apiClientProvider);
+    _repo = GroupRepoImpl(GroupRemoteDS(api));
+    
+    _get = GetGroups(_repo);
+    _upsert = UpsertGroup(_repo);
+    _delete = DeleteGroup(_repo);
     return _get(query: _query);
   }
 

@@ -37,51 +37,54 @@ class DashboardPage extends ConsumerWidget {
                 ),
               );
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Dashboard',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w900)),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      StatCard(
-                          title: 'Taux de présence',
-                          value: '${s.presenceRate.toStringAsFixed(1)}%'),
-                      StatCard(title: 'Présents', value: '${s.present}'),
-                      StatCard(title: 'Absents', value: '${s.absent}'),
-                      StatCard(title: 'Justifiés', value: '${s.justified}'),
-                      StatCard(title: 'Total marquages', value: '$total'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: isTablet
-                            ? Row(
-                                children: [
-                                  Expanded(child: chart),
-                                  const SizedBox(width: 16),
-                                  const Expanded(
-                                    child: Text(
-                                      'Les statistiques se basent sur les lignes enregistrées dans la table absences.\n'
-                                      'Crée des séances et fais le marquage pour voir les chiffres évoluer.',
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Dashboard',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        StatCard(
+                            title: 'Taux de présence',
+                            value: '${s.presenceRate.toStringAsFixed(1)}%'),
+                        StatCard(title: 'Présents', value: '${s.present}'),
+                        StatCard(title: 'Absents', value: '${s.absent}'),
+                        StatCard(title: 'Justifiés', value: '${s.justified}'),
+                        StatCard(title: 'Total marquages', value: '$total'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 320,
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: isTablet
+                              ? Row(
+                                  children: [
+                                    Expanded(child: chart),
+                                    const SizedBox(width: 16),
+                                    const Expanded(
+                                      child: Text(
+                                        'Les statistiques se basent sur les lignes enregistrées dans la table absences.\n'
+                                        'Crée des séances et fais le marquage pour voir les chiffres évoluer.',
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              )
-                            : chart,
+                                  ],
+                                )
+                              : chart,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           );

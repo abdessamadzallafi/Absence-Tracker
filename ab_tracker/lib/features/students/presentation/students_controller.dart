@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/db/app_database.dart';
-import '../../groups/data/group_local_ds.dart';
+import '../../../core/api/api_provider.dart';
+import '../../groups/data/group_remote_ds.dart';
 import '../../groups/data/group_repo_impl.dart';
 import '../../groups/domain/group.dart';
 import '../../groups/domain/usecases/get_groups.dart';
-import '../data/student_local_ds.dart';
+import '../data/student_remote_ds.dart';
 import '../data/student_repo_impl.dart';
 import '../domain/student.dart';
 import '../domain/usecases/delete_student.dart';
@@ -46,34 +46,35 @@ class StudentsState {
       );
 }
 
-final studentsControllerProvider =
-    AsyncNotifierProvider<StudentsController, StudentsState>(
+final studentsProvider =
+    AsyncNotifierProvider.autoDispose<StudentsController, StudentsState>(
         StudentsController.new);
 
-class StudentsController extends AsyncNotifier<StudentsState> {
-  late final AppDatabase _db;
-
-  late final GetGroups _getGroups;
-  late final GetStudents _getStudents;
-  late final UpsertStudent _upsert;
-  late final DeleteStudent _delete;
+class StudentsController extends AutoDisposeAsyncNotifier<StudentsState> {
+  late GetGroups _getGroups;
+  late GetStudents _getStudents;
+  late UpsertStudent _upsert;
+  late DeleteStudent _delete;
 
   int? _groupId;
   String _query = '';
   String _sortBy = 'lastName';
   bool _desc = false;
 
+  late GroupRepoImpl _groupRepo;
+  late StudentRepoImpl _studentRepo;
+
   @override
   Future<StudentsState> build() async {
-    _db = AppDatabase.instance;
+    final api = ref.watch(apiClientProvider);
 
-    final groupsRepo = GroupRepoImpl(GroupLocalDS(_db));
-    _getGroups = GetGroups(groupsRepo);
+    _groupRepo = GroupRepoImpl(GroupRemoteDS(api));
+    _getGroups = GetGroups(_groupRepo);
 
-    final studentRepo = StudentRepoImpl(StudentLocalDS(_db));
-    _getStudents = GetStudents(studentRepo);
-    _upsert = UpsertStudent(studentRepo);
-    _delete = DeleteStudent(studentRepo);
+    _studentRepo = StudentRepoImpl(StudentRemoteDS(api));
+    _getStudents = GetStudents(_studentRepo);
+    _upsert = UpsertStudent(_studentRepo);
+    _delete = DeleteStudent(_studentRepo);
 
     final groups = await _getGroups();
     final students = await _getStudents(

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../data/db/app_database.dart';
-import '../../modules_sessions/data/module_local_ds.dart';
+import '../../../core/api/api_provider.dart';
+import '../../modules_sessions/data/module_remote_ds.dart';
 import '../../modules_sessions/data/module_repo_impl.dart';
-import '../../modules_sessions/data/session_local_ds.dart';
+import '../../modules_sessions/data/session_remote_ds.dart';
 import '../../modules_sessions/data/session_repo_impl.dart';
 import '../../modules_sessions/domain/module.dart';
 import '../../modules_sessions/domain/session.dart';
-import '../../students/data/student_local_ds.dart';
+import '../../students/data/student_remote_ds.dart';
 import '../../students/data/student_repo_impl.dart';
 
-import '../data/attendance_local_ds.dart';
+import '../data/attendance_remote_ds.dart';
 import '../data/attendance_repo_impl.dart';
 import '../domain/attendance.dart';
 import '../domain/usecases/get_session_attendance.dart';
@@ -47,54 +47,70 @@ final attendanceControllerProvider =
 class AttendanceController extends AsyncNotifier<MarkAttendanceVM> {
   SessionEntity? _session;
 
-  late final AttendanceRepoImpl _attendanceRepo;
-  late final GetSessionAttendance _getSessionAtt;
-  late final MarkAttendance _mark;
+  late AttendanceRepoImpl _attendanceRepo;
+  late GetSessionAttendance _getSessionAtt;
+  late MarkAttendance _mark;
 
   @override
   Future<MarkAttendanceVM> build() async {
-    _attendanceRepo =
-        AttendanceRepoImpl(AttendanceLocalDS(AppDatabase.instance));
+    final api = ref.watch(apiClientProvider);
+    _attendanceRepo = AttendanceRepoImpl(AttendanceRemoteDS(api));
     _getSessionAtt = GetSessionAttendance(_attendanceRepo);
     _mark = MarkAttendance(_attendanceRepo);
     return const MarkAttendanceVM(session: null, module: null, rows: []);
   }
 
   Future<void> pickLatestSession(BuildContext context) async {
-    final sessionRepo = SessionRepoImpl(SessionLocalDS(AppDatabase.instance));
-    final sessions = await sessionRepo.getAll();
-    if (sessions.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Aucune séance. Crée une séance d’abord.')),
-        );
+    state = const AsyncLoading();
+
+    try {
+      final api = ref.read(apiClientProvider);
+      final sessionRepo = SessionRepoImpl(SessionRemoteDS(api));
+      final sessions = await sessionRepo.getAll();
+      if (sessions.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Aucune séance. Crée une séance d\'abord.')),
+          );
+        }
+        state = const AsyncData(
+            MarkAttendanceVM(session: null, module: null, rows: []));
+        return;
       }
-      return;
+      _session = sessions.first;
+      await _loadRows();
+    } catch (e, st) {
+      state = AsyncError(e, st);
     }
-    _session = sessions.first;
-    await _loadRows();
   }
 
   Future<void> _loadRows() async {
-    final s = _session!;
-    final moduleRepo = ModuleRepoImpl(ModuleLocalDS(AppDatabase.instance));
-    final modules = await moduleRepo.getAll();
-    final module = modules.firstWhere((m) => m.id == s.moduleId);
+    try {
+      final s = _session!;
+      final api = ref.read(apiClientProvider);
 
-    final studentRepo = StudentRepoImpl(StudentLocalDS(AppDatabase.instance));
-    final students = await studentRepo.getAll(
-        groupId: module.groupId, sortBy: 'lastName', desc: false);
+      final moduleRepo = ModuleRepoImpl(ModuleRemoteDS(api));
+      final modules = await moduleRepo.getAll();
+      final module = modules.firstWhere((m) => m.id == s.moduleId);
 
-    final existing = await _getSessionAtt(s.id!);
+      final studentRepo = StudentRepoImpl(StudentRemoteDS(api));
+      final students = await studentRepo.getAll(
+          groupId: module.groupId, sortBy: 'lastName', desc: false);
 
-    final rows = students.map((st) {
-      final status = existing[st.id!] ?? AttendanceStatus.present;
-      return AttendanceRowVM(
-          studentId: st.id!, studentName: st.fullName, status: status);
-    }).toList();
+      final existing = await _getSessionAtt(s.id!);
 
-    state = AsyncData(MarkAttendanceVM(session: s, module: module, rows: rows));
+      final rows = students.map((st) {
+        final status = existing[st.id!] ?? AttendanceStatus.present;
+        return AttendanceRowVM(
+            studentId: st.id!, studentName: st.fullName, status: status);
+      }).toList();
+
+      state =
+          AsyncData(MarkAttendanceVM(session: s, module: module, rows: rows));
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   void setStatus(int studentId, AttendanceStatus status) {
@@ -175,18 +191,32 @@ class AttendanceController extends AsyncNotifier<MarkAttendanceVM> {
     final vm = state.value;
     if (vm == null || vm.session?.id == null) return;
 
-    for (final r in vm.rows) {
-      await _mark(
-        sessionId: vm.session!.id!,
-        studentId: r.studentId,
-        status: r.status,
-        note: r.note,
-      );
-    }
+    try {
+      for (final r in vm.rows) {
+        await _mark(
+          sessionId: vm.session!.id!,
+          studentId: r.studentId,
+          status: r.status,
+          note: r.note,
+        );
+      }
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Marquage enregistré ✅')));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Marquage enregistré ✅')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'enregistrement: $e')),
+        );
+      }
     }
+  }
+
+  void resetSession() {
+    _session = null;
+    state = const AsyncData(
+        MarkAttendanceVM(session: null, module: null, rows: []));
   }
 }

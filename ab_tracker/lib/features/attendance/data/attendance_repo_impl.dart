@@ -1,9 +1,9 @@
 import '../domain/attendance.dart';
 import '../domain/attendance_repo.dart';
-import 'attendance_local_ds.dart';
+import 'attendance_remote_ds.dart';
 
 class AttendanceRepoImpl implements AttendanceRepo {
-  final AttendanceLocalDS ds;
+  final AttendanceRemoteDS ds;
   AttendanceRepoImpl(this.ds);
 
   @override

@@ -17,7 +17,7 @@ class StudentsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(studentsControllerProvider);
+    final async = ref.watch(studentsProvider);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -27,60 +27,55 @@ class StudentsPage extends ConsumerWidget {
         data: (state) {
           return Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: AppSearchBar(
-                      hint: 'Rechercher nom/prénom/massar...',
-                      onChanged: (q) => ref
-                          .read(studentsControllerProvider.notifier)
-                          .setQuery(q),
-                      onClear: () => ref
-                          .read(studentsControllerProvider.notifier)
-                          .setQuery(''),
+              AppSearchBar(
+                hint: 'Rechercher nom/prénom/massar...',
+                onChanged: (q) =>
+                    ref.read(studentsProvider.notifier).setQuery(q),
+                onClear: () => ref.read(studentsProvider.notifier).setQuery(''),
+              ),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    DropdownButton<int?>(
+                      value: state.groupFilterId,
+                      hint: const Text('Groupe'),
+                      onChanged: (v) =>
+                          ref.read(studentsProvider.notifier).setGroupFilter(v),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                            value: null, child: Text('Tous')),
+                        ...state.groups.map((g) => DropdownMenuItem<int?>(
+                            value: g.id, child: Text(g.name))),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  DropdownButton<int?>(
-                    value: state.groupFilterId,
-                    hint: const Text('Groupe'),
-                    onChanged: (v) => ref
-                        .read(studentsControllerProvider.notifier)
-                        .setGroupFilter(v),
-                    items: [
-                      const DropdownMenuItem<int?>(
-                          value: null, child: Text('Tous')),
-                      ...state.groups.map((g) => DropdownMenuItem<int?>(
-                          value: g.id, child: Text(g.name))),
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                  PopupMenuButton<String>(
-                    tooltip: 'Tri',
-                    onSelected: (v) => ref
-                        .read(studentsControllerProvider.notifier)
-                        .setSort(v),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'lastName', child: Text('Nom')),
-                      PopupMenuItem(value: 'firstName', child: Text('Prénom')),
-                      PopupMenuItem(value: 'massar', child: Text('Massar')),
-                    ],
-                    child: const Icon(Icons.sort),
-                  ),
-                  IconButton(
-                    tooltip: 'ASC/DESC',
-                    onPressed: () => ref
-                        .read(studentsControllerProvider.notifier)
-                        .toggleDesc(),
-                    icon: const Icon(Icons.swap_vert),
-                  ),
-                  FilledButton.icon(
-                    onPressed:
-                        state.groups.isEmpty ? null : () => _openForm(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Ajouter'),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    PopupMenuButton<String>(
+                      tooltip: 'Tri',
+                      onSelected: (v) =>
+                          ref.read(studentsProvider.notifier).setSort(v),
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'lastName', child: Text('Nom')),
+                        PopupMenuItem(
+                            value: 'firstName', child: Text('Prénom')),
+                        PopupMenuItem(value: 'massar', child: Text('Massar')),
+                      ],
+                      child: const Icon(Icons.sort),
+                    ),
+                    IconButton(
+                      tooltip: 'ASC/DESC',
+                      onPressed: () =>
+                          ref.read(studentsProvider.notifier).toggleDesc(),
+                      icon: const Icon(Icons.swap_vert),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => _openForm(context),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Ajouter'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -89,7 +84,9 @@ class StudentsPage extends ConsumerWidget {
                         title: 'Aucun étudiant',
                         subtitle: state.groups.isEmpty
                             ? 'Crée d’abord un groupe.'
-                            : 'Ajoute des étudiants puis marque les absences.',
+                            : (state.groupFilterId != null
+                                ? 'Aucun étudiant dans ce groupe.'
+                                : 'Ajoute des étudiants puis marque les absences.'),
                         icon: Icons.school_outlined,
                         action: state.groups.isEmpty
                             ? null
@@ -134,8 +131,7 @@ class StudentsPage extends ConsumerWidget {
                                   IconButton(
                                     icon: const Icon(Icons.delete_outline),
                                     onPressed: () => ref
-                                        .read(
-                                            studentsControllerProvider.notifier)
+                                        .read(studentsProvider.notifier)
                                         .delete(s.id!),
                                   ),
                                 ],

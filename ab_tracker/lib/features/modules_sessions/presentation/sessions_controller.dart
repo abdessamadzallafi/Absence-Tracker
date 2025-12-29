@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/db/app_database.dart';
-import '../data/module_local_ds.dart';
+import '../../../core/api/api_provider.dart';
+import '../data/module_remote_ds.dart';
 import '../data/module_repo_impl.dart';
-import '../data/session_local_ds.dart';
+import '../data/session_remote_ds.dart';
 import '../data/session_repo_impl.dart';
 import '../domain/module.dart';
 import '../domain/session.dart';
@@ -23,26 +23,26 @@ class SessionsState {
   });
 }
 
-final sessionsControllerProvider =
-    AsyncNotifierProvider<SessionsController, SessionsState>(
+final sessionsProvider =
+    AsyncNotifierProvider.autoDispose<SessionsController, SessionsState>(
         SessionsController.new);
 
-class SessionsController extends AsyncNotifier<SessionsState> {
+class SessionsController extends AutoDisposeAsyncNotifier<SessionsState> {
   String _query = '';
   int? _moduleId;
   String? _date;
 
-  late final AppDatabase _db;
+  late SessionRepoImpl _sessionRepo;
 
   @override
   Future<SessionsState> build() async {
-    _db = AppDatabase.instance;
+    final api = ref.watch(apiClientProvider);
 
-    final moduleRepo = ModuleRepoImpl(ModuleLocalDS(_db));
+    final moduleRepo = ModuleRepoImpl(ModuleRemoteDS(api));
     final modules = await moduleRepo.getAll();
 
-    final sessionRepo = SessionRepoImpl(SessionLocalDS(_db));
-    final sessions = await sessionRepo.getAll(
+    _sessionRepo = SessionRepoImpl(SessionRemoteDS(api));
+    final sessions = await _sessionRepo.getAll(
         query: _query, moduleId: _moduleId, date: _date);
 
     return SessionsState(
@@ -70,14 +70,12 @@ class SessionsController extends AsyncNotifier<SessionsState> {
   }
 
   Future<void> upsert(SessionEntity s) async {
-    final repo = SessionRepoImpl(SessionLocalDS(_db));
-    await repo.upsert(s);
+    await _sessionRepo.upsert(s);
     ref.invalidateSelf();
   }
 
   Future<void> delete(int id) async {
-    final repo = SessionRepoImpl(SessionLocalDS(_db));
-    await repo.delete(id);
+    await _sessionRepo.delete(id);
     ref.invalidateSelf();
   }
 }

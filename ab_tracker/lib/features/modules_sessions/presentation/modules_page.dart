@@ -16,41 +16,57 @@ class ModulesPage extends ConsumerWidget {
     int groupId = m?.groupId ?? state.groups.first.id!;
     final name = TextEditingController(text: m?.name ?? '');
     final sem = TextEditingController(text: m?.semester ?? 'S1');
+    final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => StatefulBuilder(builder: (context, setState) {
         return AlertDialog(
           title: Text(m == null ? 'Ajouter module' : 'Modifier module'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: groupId,
-                items: state.groups
-                    .map((g) =>
-                        DropdownMenuItem(value: g.id!, child: Text(g.name)))
-                    .toList(),
-                onChanged: (v) => setState(() => groupId = v!),
-                decoration: const InputDecoration(labelText: 'Groupe'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<int>(
+                    value: groupId,
+                    items: state.groups
+                        .map((g) =>
+                            DropdownMenuItem(value: g.id!, child: Text(g.name)))
+                        .toList(),
+                    onChanged: (v) => setState(() => groupId = v!),
+                    decoration: const InputDecoration(labelText: 'Groupe'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: name,
+                    decoration: const InputDecoration(labelText: 'Nom module'),
+                    validator: (v) =>
+                        v?.trim().isEmpty == true ? 'Requis' : null,
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: sem,
+                    decoration:
+                        const InputDecoration(labelText: 'Semestre (S1/S2...)'),
+                    validator: (v) =>
+                        v?.trim().isEmpty == true ? 'Requis' : null,
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                  controller: name,
-                  decoration: const InputDecoration(labelText: 'Nom module')),
-              const SizedBox(height: 10),
-              TextField(
-                  controller: sem,
-                  decoration:
-                      const InputDecoration(labelText: 'Semestre (S1/S2...)')),
-            ],
+            ),
           ),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(_, false),
                 child: const Text('Annuler')),
             FilledButton(
-                onPressed: () => Navigator.pop(_, true),
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(_, true);
+                  }
+                },
                 child: const Text('Enregistrer')),
           ],
         );
@@ -58,11 +74,12 @@ class ModulesPage extends ConsumerWidget {
     );
 
     if (ok == true) {
-      final nm = name.text.trim();
-      final sm = sem.text.trim();
-      if (nm.isEmpty || sm.isEmpty) return;
       await ref.read(modulesControllerProvider.notifier).upsert(
-            ModuleEntity(id: m?.id, name: nm, semester: sm, groupId: groupId),
+            ModuleEntity(
+                id: m?.id,
+                name: name.text.trim(),
+                semester: sem.text.trim(),
+                groupId: groupId),
           );
     }
   }

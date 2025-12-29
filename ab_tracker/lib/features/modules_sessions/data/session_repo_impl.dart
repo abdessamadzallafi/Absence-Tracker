@@ -1,10 +1,10 @@
 import '../domain/session.dart';
 import '../domain/session_repo.dart';
 import 'models/session_model.dart';
-import 'session_local_ds.dart';
+import 'session_remote_ds.dart';
 
 class SessionRepoImpl implements SessionRepo {
-  final SessionLocalDS ds;
+  final SessionRemoteDS ds;
   SessionRepoImpl(this.ds);
 
   @override

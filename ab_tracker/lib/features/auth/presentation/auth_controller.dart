@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_provider.dart';
 
 import '../../auth/data/auth_repo_impl.dart';
 import '../domain/auth_repo.dart';
@@ -13,7 +14,11 @@ class AuthState {
   const AuthState({required this.isLoggedIn, required this.user});
 }
 
-final authRepoProvider = Provider<AuthRepo>((ref) => AuthRepoImpl());
+
+final authRepoProvider = Provider<AuthRepo>((ref) {
+  final api = ref.watch(apiClientProvider);
+  return AuthRepoImpl(apiClient: api);
+});
 final loginUsecaseProvider =
     Provider((ref) => LoginUsecase(ref.watch(authRepoProvider)));
 

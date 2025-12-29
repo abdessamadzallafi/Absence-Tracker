@@ -16,7 +16,7 @@ class SessionsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(sessionsControllerProvider);
+    final async = ref.watch(sessionsProvider);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -29,29 +29,34 @@ class SessionsPage extends ConsumerWidget {
               Row(
                 children: [
                   Expanded(
+                    flex: 3,
                     child: AppSearchBar(
                       hint: 'Filtrer type/heure...',
-                      onChanged: (q) => ref
-                          .read(sessionsControllerProvider.notifier)
-                          .setQuery(q),
-                      onClear: () => ref
-                          .read(sessionsControllerProvider.notifier)
-                          .setQuery(''),
+                      onChanged: (q) =>
+                          ref.read(sessionsProvider.notifier).setQuery(q),
+                      onClear: () =>
+                          ref.read(sessionsProvider.notifier).setQuery(''),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  DropdownButton<int?>(
-                    value: state.moduleFilterId,
-                    hint: const Text('Module'),
-                    onChanged: (v) => ref
-                        .read(sessionsControllerProvider.notifier)
-                        .setModuleFilter(v),
-                    items: [
-                      const DropdownMenuItem<int?>(
-                          value: null, child: Text('Tous')),
-                      ...state.modules.map((m) => DropdownMenuItem<int?>(
-                          value: m.id, child: Text(m.name))),
-                    ],
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButton<int?>(
+                      value: state.moduleFilterId,
+                      isExpanded: true,
+                      hint: const Text('Module'),
+                      onChanged: (v) => ref
+                          .read(sessionsProvider.notifier)
+                          .setModuleFilter(v),
+                      items: [
+                        const DropdownMenuItem<int?>(
+                            value: null, child: Text('Tous')),
+                        ...state.modules.map((m) => DropdownMenuItem<int?>(
+                            value: m.id,
+                            child:
+                                Text(m.name, overflow: TextOverflow.ellipsis))),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   FilledButton.icon(
@@ -84,22 +89,24 @@ class SessionsPage extends ConsumerWidget {
                                       fontWeight: FontWeight.w800)),
                               subtitle: Text(
                                   'Type: ${s.type} • moduleId: ${s.moduleId}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined),
-                                    onPressed: () =>
-                                        _openForm(context, initial: s),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    onPressed: () => ref
-                                        .read(
-                                            sessionsControllerProvider.notifier)
-                                        .delete(s.id!),
-                                  ),
-                                ],
+                              trailing: SizedBox(
+                                width: 96,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined),
+                                      onPressed: () =>
+                                          _openForm(context, initial: s),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => ref
+                                          .read(sessionsProvider.notifier)
+                                          .delete(s.id!),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
